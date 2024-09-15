@@ -1,50 +1,33 @@
-# 1. Define the Secret
 apiVersion: v1
-kind: Secret
+kind: ConfigMap
 metadata:
-  name: my-secret
-type: Opaque
+  name: myconfigmap
+  namespace: other-namespace
 data:
-  username: bXktdXNlcg==  # base64-encoded 'my-user'
-  password: bXktcGFzcw==   # base64-encoded 'my-pass'
+  config-key: "config-value"
 
----
-# 2. Define the Pod that uses the Secret in different ways
+-------------------
 apiVersion: v1
 kind: Pod
 metadata:
-  name: my-pod
+  name: configmap-pod
 spec:
   containers:
-  - name: my-container
+  - name: mycontainer
     image: nginx
-
-    # Option 1: Use secret keys as individual environment variables
     env:
-    - name: USERNAME
+    - name: CONFIG_ENV_VAR
       valueFrom:
-        secretKeyRef:
-          name: my-secret  # The name of the secret
-          key: username    # The specific key in the secret
-    - name: PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: my-secret
-          key: password
-
-    # Option 2: Use envFrom to load all secret keys as environment variables
-    envFrom:
-    - secretRef:
-        name: my-secret
-
-    # Option 3: Mount secret as a volume
+        configMapKeyRef:
+          name: myconfigmap
+          key: config-key
+          optional: false
     volumeMounts:
-    - name: secret-volume
-      mountPath: "/etc/secret-volume"
+    - name: config-volume
+      mountPath: "/etc/config-volume"
       readOnly: true
-
-  # Define the volume that contains the secret
   volumes:
-  - name: secret-volume
-    secret:
-      secretName: my-secret  # The name of the secret
+  - name: config-volume
+    configMap:
+      name: myconfigmap
+      namespace: other-namespace
